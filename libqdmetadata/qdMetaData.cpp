@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -54,7 +54,11 @@ static int colorMetaDataToColorSpace(ColorMetaData in, ColorSpace_t *out) {
       *out = ITU_R_2020;
     }
   } else if (in.colorPrimaries == ColorPrimaries_BT709_5) {
-    *out = ITU_R_709;
+    if (in.range == Range_Full) {
+      *out = ITU_R_709_FR;
+    } else {
+      *out = ITU_R_709;
+    }
   } else {
     ALOGE(
         "Cannot convert ColorMetaData to ColorSpace_t. "
@@ -80,6 +84,10 @@ static int colorSpaceToColorMetadata(ColorSpace_t in, ColorMetaData *out) {
     case ITU_R_709:
       out->colorPrimaries = ColorPrimaries_BT709_5;
       out->range = Range_Limited;
+      break;
+    case ITU_R_709_FR:
+      out->colorPrimaries = ColorPrimaries_BT709_5;
+      out->range = Range_Full;
       break;
     case ITU_R_2020:
       out->colorPrimaries = ColorPrimaries_BT2020;
@@ -133,6 +141,11 @@ static bool getGralloc4Array(MetaData_t *metadata, int32_t paramType) {
     case SET_VIDEO_HISTOGRAM_STATS:
       return metadata
           ->isVendorMetadataSet[GET_VENDOR_METADATA_STATUS_INDEX(QTI_VIDEO_HISTOGRAM_STATS)];
+    case SET_VIDEO_TS_INFO:
+      return metadata
+          ->isVendorMetadataSet[GET_VENDOR_METADATA_STATUS_INDEX(QTI_VIDEO_TS_INFO)];
+    case GET_S3D_FORMAT:
+      return metadata->isVendorMetadataSet[GET_VENDOR_METADATA_STATUS_INDEX(QTI_S3D_FORMAT)];
     default:
 #ifdef TARGET_USES_GRALLOC4
       ALOGE("paramType %d not supported", paramType);
@@ -193,6 +206,13 @@ static void setGralloc4Array(MetaData_t *metadata, int32_t paramType, bool isSet
     case SET_VIDEO_HISTOGRAM_STATS:
       metadata->isVendorMetadataSet[GET_VENDOR_METADATA_STATUS_INDEX(QTI_VIDEO_HISTOGRAM_STATS)] =
           isSet;
+      break;
+    case SET_VIDEO_TS_INFO:
+      metadata->isVendorMetadataSet[GET_VENDOR_METADATA_STATUS_INDEX(QTI_VIDEO_TS_INFO)] =
+          isSet;
+      break;
+    case S3D_FORMAT:
+      metadata->isVendorMetadataSet[GET_VENDOR_METADATA_STATUS_INDEX(QTI_S3D_FORMAT)] = isSet;
       break;
 #ifdef TARGET_USES_GRALLOC4
     default:
@@ -388,7 +408,10 @@ int setMetaDataVa(MetaData_t *data, DispParamType paramType,
             }
             break;
          }
-         default:
+        case SET_VIDEO_TS_INFO:
+            data->videoTsInfo = *((VideoTimestampInfo *)param);
+            break;
+        default:
             ALOGE("Unknown paramType %d", paramType);
             break;
     }
@@ -531,6 +554,9 @@ int getMetaDataVa(MetaData_t *data, DispFetchParamType paramType,
           }
           break;
         }
+        case GET_VIDEO_TS_INFO:
+          *((VideoTimestampInfo *)param) = data->videoTsInfo;
+          break;
         default:
             ALOGE("Unknown paramType %d", paramType);
             ret = -EINVAL;
