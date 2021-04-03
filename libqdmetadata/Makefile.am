@@ -2,7 +2,9 @@ h_sources = qdMetaData.h
 
 cpp_sources = qdMetaData.cpp
 
-AM_CPPFLAGS += -D__QTI_NO_GRALLOC4__
+ifeq ($(TARGET_USES_GRALLOC4),true)
+    AM_CPPFLAGS += -DTARGET_USES_GRALLOC4
+endif
 
 qdMetaData_includedir = $(pkgincludedir)/display
 qdMetaData_include_HEADERS = $(h_sources)
