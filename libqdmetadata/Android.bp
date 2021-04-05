@@ -2,9 +2,6 @@ cc_library_shared {
     name: "libqdMetaData",
     vendor_available: true,
     system_ext_specific: true,
-    defaults: [
-        "target_uses_gralloc4_defaults",
-    ],
     cflags: [
         "-Wno-sign-conversion",
         "-DLOG_TAG=\"qdmetadata\"",

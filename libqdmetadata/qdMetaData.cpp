@@ -32,7 +32,9 @@
 #include <QtiGrallocPriv.h>
 #include <errno.h>
 #include <gralloc_priv.h>
+#ifndef __QTI_NO_GRALLOC4__
 #include <gralloctypes/Gralloc4.h>
+#endif
 #include <log/log.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -106,6 +108,7 @@ static int colorSpaceToColorMetadata(ColorSpace_t in, ColorMetaData *out) {
   return 0;
 }
 
+#ifndef __QTI_NO_GRALLOC4__
 static bool getGralloc4Array(MetaData_t *metadata, int32_t paramType) {
   switch (paramType) {
     case SET_VT_TIMESTAMP:
@@ -147,12 +150,8 @@ static bool getGralloc4Array(MetaData_t *metadata, int32_t paramType) {
     case GET_S3D_FORMAT:
       return metadata->isVendorMetadataSet[GET_VENDOR_METADATA_STATUS_INDEX(QTI_S3D_FORMAT)];
     default:
-#ifdef TARGET_USES_GRALLOC4
       ALOGE("paramType %d not supported", paramType);
       return false;
-#else
-      return true;
-#endif
   }
 }
 
@@ -214,12 +213,19 @@ static void setGralloc4Array(MetaData_t *metadata, int32_t paramType, bool isSet
     case S3D_FORMAT:
       metadata->isVendorMetadataSet[GET_VENDOR_METADATA_STATUS_INDEX(QTI_S3D_FORMAT)] = isSet;
       break;
-#ifdef TARGET_USES_GRALLOC4
     default:
       ALOGE("paramType %d not supported in Gralloc4", paramType);
-#endif
   }
 }
+#else
+static bool getGralloc4Array(MetaData_t *metadata, int32_t paramType) {
+  return true;
+}
+
+static void setGralloc4Array(MetaData_t *metadata, int32_t paramType, bool isSet) {
+}
+#endif
+
 
 unsigned long getMetaDataSize() {
     return static_cast<unsigned long>(ROUND_UP_PAGESIZE(sizeof(MetaData_t)));
